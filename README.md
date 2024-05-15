@@ -16,6 +16,17 @@ Enter the Monorepo buildpack, which is a copy of [heroku-buildpack-multi-procfil
 
 Note: If you already have other buildpacks defined, you'll need to make sure that the heroku-buildpack-monorepo buildpack is defined first. You can do this by adding `-i 1` to the `heroku buildpacks:add` command.
 
+# Local dependencies
+
+> https://github.com/jan-tee/heroku-buildpack-monorepo/tree/master
+
+If you have local dependencies (e.g. a lerna monorepo with file:../package name style dependencies pointing to packages contained in the same repo, exactly one level above your package) you can add them using the DEPENDENCIES build var. E.g.
+
+1. APP_BASE=packages/frontend
+2. DEPENDENCIES=packages/shared packages/util to include two packages, packages/shared and packages/util.
+
+would add packages/shared and packages/util to one level above the Heroku BUILD_DIR and make them available for the build process.
+
 # Authors
 
-Andrew Gwozdziewycz <apg@heroku.com> and Cyril David <cyx@heroku.com> and now Lincoln Stoll <lstoll@heroku.com>
+Andrew Gwozdziewycz apg@heroku.com and Cyril David cyx@heroku.com and now Lincoln Stoll lstoll@heroku.com and Jan Tietze jan@tietze.io
