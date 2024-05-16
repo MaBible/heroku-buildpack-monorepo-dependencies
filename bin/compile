@@ -1,51 +1,35 @@
 #!/usr/bin/env bash
 
-# Ensure wildcards in globs match dotfiles too.
-shopt -s dotglob
-
 indent() {
     sed -u 's/^/      /'
 }
 
 BUILD_DIR="$1"
-CACHE_DIR="$2"
+CACHE_DIR="$2" # not used in this script, can remove it?
 ENV_DIR="$3"
-STAGE="$(mktemp -d)"
 
-if [ ! -f "${ENV_DIR}/APP_BASE" ]; then
-    echo "APP_BASE was not set. Aborting" | indent
+if [ ! -f "${ENV_DIR}/IGNORE_DEPENDENCIES" ]; then
+    echo "IGNORE_DEPENDENCIES was not set. Aborting" | indent
     exit 1
-fi
-APP_BASE="$(cat "${ENV_DIR}/APP_BASE")"
-
-if [ ! -f "${ENV_DIR}/DEPENDENCIES" ]; then
-    echo "No dependencies configured. If you wish to include local packages in monorepo with '../<package>' style depencies, set DEPENDENCIES." | indent
-else
-    DEPENDENCIES="$(cat "${ENV_DIR}/DEPENDENCIES")"
 fi
 
 (
-    mv "${BUILD_DIR}/yarn.lock" "${BUILD_DIR}/${APP_BASE}" &&
-        mv "${BUILD_DIR}/${APP_BASE}" "${STAGE}" &&
-        if [ ! -z "$DEPENDENCIES" ]; then
-            echo "Processing dependencies" | indent
-            for DEPENDENCY in ${DEPENDENCIES}; do
-                if [ ! -d "${BUILD_DIR}/${DEPENDENCY}" ]; then
-                    echo "Dependency ${DEPENDENCY} not found. Aborting" | indent
-                    exit 1
-                fi
-                TARGET="${BUILD_DIR}/../$(basename "$DEPENDENCY")"
-                echo "Lifting dependency ${DEPENDENCY} from '${BUILD_DIR}/${DEPENDENCY}' to '${TARGET}'." | indent | indent
-                mv -v "${BUILD_DIR}/${DEPENDENCY}" "${TARGET}"
-            done
-        fi &&
-        rm -rf "${BUILD_DIR}"/* &&
-        mv "${STAGE}/$(basename "$APP_BASE")"/* "${BUILD_DIR}"
+    if [ ! -z "$IGNORE_DEPENDENCIES" ]; then
+        echo "Processing dependencies to remove" | indent
+        for DEPENDENCY in ${IGNORE_DEPENDENCIES}; do
+            if [ ! -d "${BUILD_DIR}/${DEPENDENCY}" ]; then
+                echo "Dependency ${DEPENDENCY} not found. Aborting" | indent
+                exit 1
+            fi
+            echo "Removing dependency ${DEPENDENCY} from '${BUILD_DIR}/${DEPENDENCY}'." | indent | indent
+            rm -rf "${BUILD_DIR}/${DEPENDENCY}"
+        done
+    fi
 )
 
 if [ $? -ne 0 ]; then
-    echo "FAILED to copy directory into place" | indent
+    echo "FAILED to remove dependencies ${IGNORE_DEPENDENCIES}" | indent
     exit 1
 fi
 
-echo "Copied ${APP_BASE} to root of app successfully" | indent
+echo "Removed dependencies ${IGNORE_DEPENDENCIES} from app successfully" | indent
